@@ -1,58 +1,30 @@
-<div align="center">
+
 
 # Automatic Number Plate Recognition System
 
-### Real-time license plate detection, alignment, and recognition for Rwanda vehicle registration
+### Real-Time License Plate Detection, Alignment, and Recognition for Rwanda Vehicle Registration
 
-[![Python 3.11.9](https://img.shields.io/badge/python-3.11.9-blue.svg)](https://www.python.org/downloads/)
-[![OpenCV](https://img.shields.io/badge/opencv-computer%20vision-green.svg)](https://opencv.org/)
-[![Tesseract OCR](https://img.shields.io/badge/tesseract-OCR%20engine-orange.svg)](https://github.com/tesseract-ocr/tesseract)
-
-</div>
 
 ---
 
 ## Overview
 
-This project implements a complete **Automatic Number Plate Recognition (ANPR)** system inspired by a three-stage approach: detecting the plate, correcting its orientation, and extracting the text.
-
-The application uses a webcam to capture live video, identifies potential number plates using OpenCV, straightens the detected plate, reads characters using OCR, and verifies them against Rwanda's standard plate format.
-
-To improve reliability, the system confirms results over multiple frames before storing them in a CSV file.
+This project implements a comprehensive **Automatic Number Plate Recognition (ANPR)** system, following a three-stage architecture: plate detection, orientation correction, and optical character recognition (OCR). The application leverages a webcam for live video capture, employs OpenCV for candidate plate identification, corrects perspective distortion, extracts text via Tesseract OCR, and validates the output against the official Rwanda vehicle registration format. To ensure robustness, the system employs temporal verification across multiple frames before persisting validated results to a structured CSV file.
 
 ---
 
 ## System Architecture
 
-The ANPR pipeline consists of six interconnected stages that process video frames in real-time:
+The ANPR pipeline is composed of six integrated processing stages, operating sequentially on each video frame:
 
-### Stage 1: Plate Detection
-
-Each frame from the camera is converted to grayscale, filtered, and processed to highlight edges. The system then searches for rectangular shapes that resemble number plates based on size and proportions.
-
-### Stage 2: Plate Alignment
-
-Once a candidate region is found, it is transformed into a clean, straightened image using a perspective correction. The output is normalized to a fixed size of **450 × 140 pixels**.
-
-### Stage 3: Text Recognition (OCR)
-
-The processed plate image is enhanced and passed to Tesseract OCR, which extracts characters using only uppercase letters and digits.
-
-### Stage 4: Format Validation
-
-The recognized text is cleaned and checked against the Rwanda plate structure:
-
-```
-AAA999A
-```
-
-### Stage 5: Multi-Frame Confirmation
-
-To reduce false detections, the same plate must appear consistently across several frames before it is accepted as valid.
-
-### Stage 6: Data Storage
-
-Verified plate numbers are saved into a CSV file located in the `data` directory.
+| Stage | Component | Description |
+|-------|-----------|-------------|
+| 1 | Plate Detection | Converts each frame to grayscale, applies morphological filtering and edge detection, then identifies rectangular contours matching the geometric and dimensional characteristics of a standard license plate. |
+| 2 | Plate Alignment | Applies perspective transformation to extract the detected region, corrects for skew and rotation, and normalizes the output to a fixed resolution of **450 × 140 pixels**. |
+| 3 | Text Recognition (OCR) | Enhances the normalized plate image through binarization and noise reduction, then extracts alphanumeric characters using Tesseract OCR configured for uppercase letters and digits. |
+| 4 | Format Validation | Sanitizes the OCR output and validates the string against the Rwanda plate structure pattern: `AAA999A`. |
+| 5 | Multi-Frame Confirmation | Implements temporal consistency by requiring a candidate plate to be recognized successfully across a configurable number of consecutive frames before acceptance. |
+| 6 | Data Storage | Appends verified plate numbers along with a timestamp to a CSV file located in the designated `data` directory. |
 
 ---
 
@@ -79,71 +51,57 @@ car_plate_extraction/
 
 ## Installation
 
-Clone the repository:
+Follow these steps to set up the project environment:
+
+1. Clone the repository:
 
 ```bash
-git clone https://github.com/humuraelvin/car-plate-extraction.git
+git clone https://github.com/Mugisha-Samuella/ANPR-full-pipeline.git
+cd ANPR-full-pipeline
 ```
 
-Set up Python (recommended version: **3.11.9**):
+2. Set up Python environment (version **3.11.9** recommended):
 
 ```bash
 pyenv local 3.11.9
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
+
+3. Upgrade pip and install dependencies:
+
+```bash
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 
-Verify Tesseract installation:
+4. Verify Tesseract OCR installation:
 
 ```bash
 tesseract --version
 ```
 
-If it's not detected, provide the full path using:
-
-```
---tesseract-cmd
-```
+If Tesseract is not in your system PATH, specify its full path using the `--tesseract-cmd` argument when running the application.
 
 ---
 
 ## Usage
 
-You can test each stage independently:
+The system provides modular components for testing and a unified entry point for full operation.
 
-**Camera test**
+### Component Testing
 
-```bash
-python src/camera.py
-```
+| Command | Description |
+|---------|-------------|
+| `python src/camera.py` | Tests camera feed and basic capture functionality. |
+| `python src/detect.py` | Executes only the plate detection stage with visual feedback. |
+| `python src/align.py` | Performs detection and perspective correction. |
+| `python src/ocr.py` | Runs detection, alignment, and OCR extraction. |
+| `python src/validate.py` | Executes the complete pipeline including format validation. |
 
-**Detection only**
+### Full System Execution
 
-```bash
-python src/detect.py
-```
-
-**Detection + alignment**
-
-```bash
-python src/align.py
-```
-
-**Detection + alignment + OCR**
-
-```bash
-python src/ocr.py
-```
-
-**Full pipeline with validation**
-
-```bash
-python src/validate.py
-```
-
-**Complete system (recommended)**
+Launch the complete ANPR system with default settings:
 
 ```bash
 python src/main.py
@@ -153,66 +111,96 @@ python src/main.py
 
 ## Configuration Options
 
+The main application supports several command-line arguments for customization:
+
 ```bash
+# Specify camera device and resolution
 python src/main.py --camera 0 --width 1280 --height 720
+
+# Process a single image file instead of camera feed
 python src/main.py --image sample.jpg
+
+# Adjust temporal validation parameters
 python src/main.py --buffer-size 5 --min-confirmations 3 --cooldown 10
 ```
+
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--camera` | Camera device index | 0 |
+| `--width` | Capture frame width | 1280 |
+| `--height` | Capture frame height | 720 |
+| `--image` | Path to image file (overrides camera) | None |
+| `--buffer-size` | Frames to maintain in history | 5 |
+| `--min-confirmations` | Required consistent detections | 3 |
+| `--cooldown` | Seconds to wait after successful detection | 10 |
 
 ---
 
 ## Testing Guidelines
 
-1. Request permission from the vehicle owner before testing.
-2. Launch the full system:
+To ensure accurate evaluation and reproducible results:
 
-   ```bash
-   python src/main.py
-   ```
-3. Position the camera to clearly capture the plate.
-4. Wait until the system confirms the plate.
-5. Press **`s`** to save screenshots.
-6. Repeat with different vehicles.
-7. Upload screenshots and results to your repository.
+1. **Obtain consent** from vehicle owners before conducting tests.
+2. Launch the system in full mode:
+
+```bash
+python src/main.py
+```
+
+3. Position the camera such that the license plate occupies a significant portion of the frame and is well-lit.
+4. Maintain a stable position until the system confirms detection (indicated on-screen).
+5. Press **`s`** during runtime to capture and save screenshots of the current detection state.
+6. Repeat the process with multiple vehicles to evaluate generalization.
+7. Upload collected screenshots and the generated CSV data to the repository for documentation.
 
 ---
 
 ## Plate Format Specification
 
-The system expects plates in the format:
+The system validates license plates against the official Rwanda format:
 
-```
-AAA999A
-```
+**Pattern:** `AAA999A`
 
-**Examples:**
+- Positions 1–3: Uppercase letters (A–Z)
+- Positions 4–6: Numeric digits (0–9)
+- Position 7: Uppercase letter (A–Z)
+
+**Valid Examples:**
 
 ```
 RAH972U
 RAB123A
 ```
 
-To improve accuracy, common OCR mistakes are corrected automatically (e.g., O ↔ 0, S ↔ 5, B ↔ 8, I ↔ 1).
+**Character Correction:** The OCR post-processor automatically corrects common misreadings such as:
+
+- `O` ↔ `0`
+- `S` ↔ `5`
+- `B` ↔ `8`
+- `I` ↔ `1`
 
 ---
 
 ## Sample Output
 
-After testing, saved images will appear in the `screenshots` folder:
+Upon successful detection, the system saves annotated images to the `screenshots` directory, illustrating each stage of the pipeline:
 
-```markdown
-![Detection](screenshots/detection.png)
-![Alignment](screenshots/alignment.png)
-![OCR](screenshots/ocr.png)
-```
+| Stage | Example |
+|-------|---------|
+| Detection | ![Detection](screenshots/detection.png) |
+| Alignment | ![Alignment](screenshots/alignment.png) |
+| OCR Result | ![OCR](screenshots/ocr.png) |
 
 ---
 
 ## Data Export Format
 
-Recognized plates are stored as:
+All confirmed plate recognitions are logged in `data/plates.csv` with the following structure:
 
 ```csv
 Plate Number,Timestamp
 RAH972U,2026-03-12 10:45:16
+RAB123A,2026-03-12 10:47:22
 ```
+
+The timestamp records the moment of final confirmation after the multi-frame validation.
